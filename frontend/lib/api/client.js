@@ -251,13 +251,21 @@ export const auth = {
         return result;
       }),
 
+  // /game/player/by-username/{username} deliberately returns only
+  // {player_id, username} (see routes/game.py) -- it's the unauthenticated
+  // bootstrap step, not a source of profile data. Mint a real token via
+  // dev-login, then fetch the actual profile through the properly
+  // authenticated GET /player/{player_id} (currentPlayer()), which only the
+  // now-bound identity can read.
   login: (username) =>
-    request(`/game/player/by-username/${encodeURIComponent(username)}`)
-      .then(rememberPlayer)
-      .then(async (result) => {
-        await tryDevLogin(result.player.player_id);
-        return result;
-      }),
+    request(`/game/player/by-username/${encodeURIComponent(username)}`).then(
+      async ({ player_id: playerId }) => {
+        await tryDevLogin(playerId);
+        live.playerId = playerId;
+        persistLiveState();
+        return { player: await currentPlayer() };
+      }
+    ),
 
   logout: async () => {
     clearLiveState();

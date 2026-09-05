@@ -189,12 +189,24 @@ async def get_player(
 
 @router.get("/player/by-username/{username}")
 async def get_player_by_username(username: str, db: Session = Depends(get_db)):
-    """Look up a player by username — needed for login/lookup flows."""
+    """Resolve a username to a player_id — the first step of the demo
+    username-only login bootstrap (see routes/dev_auth.py). Deliberately
+    unauthenticated: the client has no bearer token yet at this point, so it
+    can't be gated behind require_own_player_dependency the way every other
+    player route now is.
+
+    Deliberately returns only {player_id, username}, never the full
+    _serialize_player() payload — that would let anyone who merely knows or
+    guesses a username read that player's level, XP, hero_id, powerup state
+    and per-topic accuracy history with no proof of identity at all. The
+    frontend uses this player_id to mint a real token via /auth/dev-login,
+    then fetches the actual profile through the properly authenticated
+    GET /player/{player_id}, which only that bound identity can read.
+    """
     player = db.query(Player).filter(Player.username == username).first()
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
-    histories = db.query(AccuracyHistory).filter(AccuracyHistory.player_id == player.player_id).all()
-    return _serialize_player(player, histories)
+    return {"player_id": player.player_id, "username": player.username}
 
 
 # ─── Character selection ───
