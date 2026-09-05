@@ -315,7 +315,8 @@ Full request/response schemas are served live at `http://localhost:8000/docs`.
 | Endpoint | Purpose |
 |---|---|
 | `POST /game/player/create` | Create a player |
-| `GET /game/player/{id}` / `by-username/{username}` | Fetch stats + accuracy history |
+| `GET /game/player/{id}` | Fetch stats + accuracy history (own-player auth required) |
+| `GET /game/player/by-username/{username}` | Resolve a username to `{player_id, username}` only — the unauthenticated demo-login bootstrap step; never returns profile data |
 | `GET /game/dungeons` / `dungeon/{id}` | List / fetch a dungeon and its rooms (list now includes `slug`) |
 | `POST /game/session/start` | Start a run, bump login streak, open first room |
 | `POST /game/room/enter` | Enter a room — picks difficulty, generates the question |

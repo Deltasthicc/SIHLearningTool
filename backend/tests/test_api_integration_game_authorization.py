@@ -181,6 +181,24 @@ def test_path_player_write_route_rejects_another_players_id():
     assert other.hero_id is None
 
 
+def test_by_username_lookup_never_leaks_the_full_profile():
+    """The one route that stays deliberately unauthenticated (it's the
+    pre-token bootstrap step for the demo login -- see routes/dev_auth.py)
+    must still never disclose another player's level, XP, hero_id, powerup
+    state or accuracy history to a caller who merely knows their username."""
+    db = _db()
+    player = Player(username="lookup-target", level=7, total_xp=999, hero_id="titan_warrior")
+    db.add(player)
+    db.flush()  # assigns player.player_id before it's referenced below
+    db.add(AccuracyHistory(player_id=player.player_id, topic="arrays", recent_accuracy=0.9))
+    db.commit()
+
+    response = TestClient(_app(db)).get(f"/game/player/by-username/{player.username}")
+
+    assert response.status_code == 200
+    assert response.json() == {"player_id": player.player_id, "username": player.username}
+
+
 def test_raid_join_rejects_another_players_id():
     db = _db()
     owner = Player(username="raid-owner")
